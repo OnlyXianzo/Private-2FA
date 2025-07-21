@@ -16,11 +16,9 @@ else:
 
 # Correct .env path handling
 env_path = os.path.join(base_dir, "code.env")
-print("Looking for .env at:", env_path)
 
 # Load secrets from .env
 accounts = dotenv_values(env_path)
-print("Loaded accounts:", accounts)
 
 # GUI setup with modern styling
 root = tk.Tk()
