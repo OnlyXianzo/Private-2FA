@@ -192,7 +192,7 @@ This software is provided "as is" without warranty. Users are responsible for:
 
 **Xianzo-gamedev**
 - GitHub: [@Xianzo-gamedev](https://github.com/Xianzo-gamedev)
-- Email: shloktiwari9044@gmail.com
+- Email: xianzo.help@gmail.com
 
 ---
 
