@@ -171,14 +171,16 @@ def _on_mousewheel(event):
     canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
 
 canvas.bind_all("<MouseWheel>", _on_mousewheel)
-frame.bind("<Configure>", on_frame_configure)
 
-# Create canvas container frame
+# Create canvas container frame  
 canvas_container = tk.Frame(root, bg=BG_COLOR)
-canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=(2, 0))
 
 canvas.pack(in_=canvas_container, side="left", fill="both", expand=True)
 scroll_y.pack(in_=canvas_container, side="right", fill="y")
+
+# Bind frame configure to update canvas scrollregion
+frame.bind("<Configure>", on_frame_configure)
 
 # Footer with app information - ensure it's always visible at bottom
 footer_frame = tk.Frame(root, bg=SECONDARY_BG, height=70)
@@ -209,4 +211,11 @@ root.focus_set()  # Enable keyboard events
 
 # Start the application
 refresh_codes()
+
+# Force canvas update to ensure buttons are visible
+root.after(100, lambda: (
+    canvas.update_idletasks(),
+    canvas.configure(scrollregion=canvas.bbox("all"))
+))
+
 root.mainloop()
