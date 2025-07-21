@@ -24,7 +24,7 @@ accounts = dotenv_values(env_path)
 # GUI setup with modern styling
 root = tk.Tk()
 root.title("🔐 TOTP Authenticator")
-root.geometry("480x650")
+root.geometry("520x700")
 root.configure(bg="#0d1117")
 root.resizable(True, True)
 root.minsize(400, 500)
@@ -173,25 +173,29 @@ def _on_mousewheel(event):
 canvas.bind_all("<MouseWheel>", _on_mousewheel)
 frame.bind("<Configure>", on_frame_configure)
 
-canvas.pack(side="left", fill="both", expand=True)
-scroll_y.pack(side="right", fill="y")
+# Create canvas container frame
+canvas_container = tk.Frame(root, bg=BG_COLOR)
+canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
 
-# Footer with app information
-footer_frame = tk.Frame(root, bg=SECONDARY_BG, height=60)
-footer_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+canvas.pack(in_=canvas_container, side="left", fill="both", expand=True)
+scroll_y.pack(in_=canvas_container, side="right", fill="y")
+
+# Footer with app information - ensure it's always visible at bottom
+footer_frame = tk.Frame(root, bg=SECONDARY_BG, height=70)
+footer_frame.pack(fill=tk.X, padx=10, pady=(5, 10), side=tk.BOTTOM)
 footer_frame.pack_propagate(False)
 
 footer_label = tk.Label(footer_frame, 
                         text=f"🔒 {len(accounts)} accounts loaded | Press F5 to refresh manually",
                         fg=SUBTLE_TEXT, bg=SECONDARY_BG, 
                         font=("Segoe UI", 9))
-footer_label.pack()
+footer_label.pack(pady=2)
 
 # Contribution button linking to GitHub profile
-github_button = ttk.Button(footer_frame, text="Contribute ❤️", 
+github_button = ttk.Button(footer_frame, text="⭐ Contribute on GitHub ❤️", 
                            command=lambda: webbrowser.open("https://github.com/Xianzo-gamedev"),
                            style="Accent.TButton")
-github_button.pack(pady=5)
+github_button.pack(pady=3)
 
 # Keyboard shortcuts
 def on_key_press(event):
