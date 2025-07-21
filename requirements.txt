@@ -1,0 +1,4 @@
+pyotp==2.8.0
+pyperclip==1.8.2
+python-dotenv==1.0.0
+protobuf==4.25.1
