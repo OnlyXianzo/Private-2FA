@@ -17,9 +17,15 @@ else:
 
 # Correct .env path handling
 env_path = os.path.join(base_dir, "code.env")
+if not os.path.exists(env_path):
+    raise FileNotFoundError(f"Environment file not found: {env_path}")
 
 # Load secrets from .env
 accounts = dotenv_values(env_path)
+if accounts:
+    print(f"[DEBUG] Loaded accounts from code.env: {list(accounts.keys())}")
+else:
+    print("[DEBUG] No accounts loaded from code.env or file is empty.")
 
 # GUI setup with modern styling
 root = tk.Tk()
@@ -74,14 +80,28 @@ info_label = tk.Label(root, text="💡 Click any code to copy to clipboard",
                       font=("Segoe UI", 10, "italic"))
 info_label.pack(pady=5)
 
+# Create canvas container frame first
+canvas_container = tk.Frame(root, bg=BG_COLOR)
+canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=(2, 0))
+
 # Scrollable canvas setup with modern colors
 canvas = tk.Canvas(root, bg=BG_COLOR, highlightthickness=0)
+canvas.configure(yscrollincrement=20)  # Adjusted scroll speed
 scroll_y = tk.Scrollbar(root, orient="vertical", command=canvas.yview,
                        bg=SECONDARY_BG, troughcolor=BG_COLOR, 
                        activebackground=ACCENT_COLOR)
+
+# Pack canvas and scrollbar
+canvas.pack(in_=canvas_container, side="left", fill="both", expand=True)
+scroll_y.pack(in_=canvas_container, side="right", fill="y")
+
+# Create frame inside canvas
 frame = tk.Frame(canvas, bg=BG_COLOR)
 canvas_frame = canvas.create_window((0, 0), window=frame, anchor="nw")
 canvas.configure(yscrollcommand=scroll_y.set)
+
+# Configure canvas size
+canvas.config(width=400, height=500)
 
 buttons = {}
 
@@ -103,12 +123,13 @@ def refresh_codes():
         
         # Update button text with number, centered name, and formatted code
         display_text = f"{i:2d}.  {name:<25} {formatted_code:>8}"
-        buttons[name].config(text=display_text, command=partial(copy_code, name, code))
-    
+        if name in buttons:
+            buttons[name].config(text=display_text, command=partial(copy_code, name, code))
     # After updating codes, start countdown
     update_countdown()
 
 def update_countdown():
+    global refresh_job
     now = time.time()
     seconds_remaining = 30 - int(now) % 30
     
@@ -127,9 +148,9 @@ def update_countdown():
 
     # If 1 second left, refresh codes next
     if seconds_remaining == 1:
-        root.after(1000, refresh_codes)
+        refresh_job = root.after(1000, refresh_codes)
     else:
-        root.after(1000, update_countdown)
+        refresh_job = root.after(1000, update_countdown)
 
 # Add hover effects
 def on_button_enter(event):
@@ -144,8 +165,9 @@ for i, name in enumerate(accounts):
     btn_container = tk.Frame(frame, bg=BG_COLOR)
     btn_container.pack(fill=tk.X, pady=3, padx=15)
     
+    initial_text = f"{i+1:2d}.  {name:<25} ..."
     btn = tk.Button(
-        btn_container, text=f"{i+1:2d}.  {name:<25} ...", 
+        btn_container, text=initial_text, 
         font=("Consolas", 10, "normal"),  # Monospace font for proper alignment
         bg=SECONDARY_BG, fg=TEXT_COLOR, 
         relief="flat", bd=1,
@@ -164,22 +186,46 @@ for i, name in enumerate(accounts):
     buttons[name] = btn
 
 # Scroll bindings
-def on_frame_configure(event):
-    canvas.configure(scrollregion=canvas.bbox("all"))
-
 def _on_mousewheel(event):
-    canvas.yview_scroll(-1 if event.delta > 0 else 1, "units")
+    global refresh_job
+    
+    # Get scroll direction and calculate smooth scroll amount
+    if event.delta:  # Windows/MacOS
+        delta = event.delta
+        scroll_amount = 1 if delta < 0 else -1  # Reversed the logic here
+    else:  # Linux
+        scroll_amount = -1 if event.num == 5 else 1 if event.num == 4 else 0  # Reversed the logic here
+    
+    # Smooth scroll with proper speed control
+    canvas.yview_scroll(scroll_amount, "units")
+    
+    # Cancel any pending refresh and schedule a new one
+    try:
+        root.after_cancel(refresh_job)
+    except:
+        pass
+    
+    refresh_job = root.after(250, refresh_codes)  # Resume refresh after 250ms
 
+def resume_refresh():
+    global refresh_job
+    refresh_codes()
+
+# Bind for Windows and MacOS mousewheel
 canvas.bind_all("<MouseWheel>", _on_mousewheel)
+# Bind for Linux mousewheel
+canvas.bind_all("<Button-4>", _on_mousewheel)
+canvas.bind_all("<Button-5>", _on_mousewheel)
+# Bind touchpad scrolling for Windows
+canvas.bind_all("<Shift-MouseWheel>", _on_mousewheel)
 
-# Create canvas container frame  
-canvas_container = tk.Frame(root, bg=BG_COLOR)
-canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=(2, 0))
-
-canvas.pack(in_=canvas_container, side="left", fill="both", expand=True)
-scroll_y.pack(in_=canvas_container, side="right", fill="y")
+# Make sure canvas shows its content
+frame.update_idletasks()  # Force frame to update its geometry
 
 # Bind frame configure to update canvas scrollregion
+def on_frame_configure(event=None):
+    canvas.configure(scrollregion=canvas.bbox("all"))
+
 frame.bind("<Configure>", on_frame_configure)
 
 # Footer with app information - ensure it's always visible at bottom
@@ -209,13 +255,16 @@ def on_key_press(event):
 root.bind('<KeyPress>', on_key_press)
 root.focus_set()  # Enable keyboard events
 
-# Start the application
-refresh_codes()
+# Initialize global refresh job variable
+refresh_job = None
 
-# Force canvas update to ensure buttons are visible
-root.after(100, lambda: (
-    canvas.update_idletasks(),
-    canvas.configure(scrollregion=canvas.bbox("all"))
-))
+# Start the application with smoother initialization
+def init_app():
+    global refresh_job
+    canvas.update_idletasks()
+    on_frame_configure()
+    refresh_job = root.after(0, refresh_codes)
+
+root.after(100, init_app)
 
 root.mainloop()
