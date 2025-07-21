@@ -133,12 +133,14 @@ pyinstaller --onefile --windowed --icon=icon.ico --name="Private-2FA" 2FA.pyw
 Private-2FA/
 ├── 2FA.pyw              # Main GUI application
 ├── google code .py      # Secret extraction utility
-├── code.env             # Your TOTP secrets (not in repo)
-├── code.env.example     # Template file
+├── code.env.example     # Template file for your secrets
 ├── requirements.txt     # Python dependencies
 ├── .gitignore          # Git ignore file
-└── README.md           # This file
+├── LICENSE             # MIT license
+└── README.md           # This documentation
 ```
+
+**Note:** You'll need to create your own `code.env` file using the template provided.
 
 ## 🚨 Troubleshooting
 
